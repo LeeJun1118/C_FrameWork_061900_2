@@ -2,7 +2,7 @@
 
 
 //** 전역변수
-SCENEID eSCENEID = SCENEID_STAGE;
+SCENEID eSCENEID = SCENEID_MENU;
 DWORD dwMonsterTime = 0;
 
 int Collision = 0;
@@ -14,59 +14,42 @@ int iLogoCheck = 0;
 
 float fPlayerSpeed = 2;
 int iPlayerCount = 0;
-DWORD FrameTime = 280;
+DWORD FrameTime = 250;
 
 DWORD MenuFrame;
 DWORD MenuCheck = 0;
 
-Logo* pLogo[13];
 
 
-//함수 전방 선언
+//** 함수 전방선언
 void SetScene(Object* _pPlayer[], Object* _pMonster[]);
 
 Object* CreateObject();
 
+
+void InitPlayer(Object* _pPlayer);
+void PlayerProgress(Object* _pPlayer[], Object* _pMonster[]);
+void PlayerRender(Object* _pPlayer[]);
+
 void InitMonster(Object* _pMonster);
 void MonsterProgress(Object* _pMonster[]);
-void CreateMonster(Object* _pMonster[]);
 void MonsterRender(Object* _pMonster[]);
+void CreateMonster(Object* _pMonster[]);
+
+void BackGroundRender();
 
 void SetCursorPosiotion(int _ix, int _iy, char* _str, int _iColor);
 void SetCursorPosiotionInteger(int _ix, int _iy, int _value);
 void SetCursorColor(int _iColor);
-void BackGroundRender();
 DWORD InputKey();
+
+
 
 int main(void) {
 	//** rand Initialize
-	srand(GetTickCount());
+	srand(GetTickCount64());
 
-	//** Create Logo
-	for (int i = 0; i < 13; i++)
-		pLogo[i] = (Logo*)malloc(sizeof(Logo));
-
-	//** Logo Initialize
-	for (int i = 0; i < 13; i++)
-		pLogo[i]->TransPos.Position = Vector3(20.f, int(5.f + i));
-
-
-	pLogo[0]->pName = (char*)"##                       #";
-	pLogo[1]->pName = (char*)" ##                     ##";
-	pLogo[2]->pName = (char*)" ##          ##        ##";
-	pLogo[3]->pName = (char*)" ##          ##        ##         ###     #### #   ###  ##";
-	pLogo[4]->pName = (char*)" ##          ##        ##   ####   ### ######  ## #### ####";
-	pLogo[5]->pName = (char*)" ##          ##        ##  ######   #####       ##  ####  ##";
-	pLogo[6]->pName = (char*)" ##          ##        ## ##    ##  ##          ##   ##   ##";
-	pLogo[7]->pName = (char*)" ##          ##        ## ##    ##  ##          ##   ##   ##";
-	pLogo[8]->pName = (char*)"  ##         ##        ## ##    ##  ##          ##   ##   ##";
-	pLogo[9]->pName = (char*)"   ##        ##        #  ##    ##  ##          ##   ##   ##";
-	pLogo[10]->pName = (char*)"    ###     ####      #   ##    ##  ##          ##   ##   ##";
-	pLogo[11]->pName = (char*)"     ########  #######     ######   ###         ###  ###  ###";
-	pLogo[12]->pName = (char*)"       ####     ####        ####    ###         ###  ###  ###";
-
-
-
+	
 
 	//** Create Player
 	Object* pPlayer[PLAYER_MAX];
@@ -75,28 +58,22 @@ int main(void) {
 	Object* pMonster[MONSTER_MAX];
 
 	//** FrameTime Initialize
-	DWORD dwTime = GetTickCount();
+	DWORD dwTime = GetTickCount64();
 
 	//** Create Monster Time Initialize
-	dwMonsterTime = GetTickCount();
+	dwMonsterTime = GetTickCount64();
 
-	MenuFrame = GetTickCount();
+	MenuFrame = GetTickCount64();
 
-	for (int i = 0; i < MONSTER_MAX; i++)
-	{
-		pMonster[i] = CreateObject();
-		InitMonster(pMonster[i]);
-
-	}
 
 	while(true)
 	{
 		
 
-		if (dwTime + FrameTime + iSleep < GetTickCount())
+		if (dwTime + FrameTime + iSleep < GetTickCount64())
 		{
 		
-			dwTime = GetTickCount();
+			dwTime = GetTickCount64();
 			system("cls");
 
 			if (Collision)
@@ -126,18 +103,57 @@ void SetScene(Object* _pPlayer[], Object* _pMonster[])
 	case SCENEID_MENU:
 		printf_s("SCENEID_MENU\n");
 
+		if (GetAsyncKeyState(VK_RETURN))
+			eSCENEID = SCENEID_STAGE;
+
+
+		/*for (int i = 0; i < MONSTER_MAX; i++)
+		{
+			//각각을 동적할당
+			_pMonster[i] = CreateObject();
+			//초기화
+			InitMonster(_pMonster[i]);
+			_pMonster[i]->TransPos.Position = Vector3(float(rand() % (WINSIZEX - 5) + 2), 1.f);
+
+		}*/
+		
+		if (GetAsyncKeyState(VK_RETURN))
+			eSCENEID = SCENEID_STAGE;
+
+		for (int i = 0; i < PLAYER_MAX; i++)
+			_pPlayer[i] = NULL;
+
+		_pPlayer[0] = CreateObject();
+		InitPlayer(_pPlayer[0]);
+
+		_pPlayer[0]->pName = (char*)"◎";
+
+		iGameover = 0;
+		iPlayerCount = 0;
+		FrameTime = 280;
+
+		for (int i = 0; i < MONSTER_MAX; i++)
+			_pMonster[i] = NULL;
+
+		break;
+		
+		
+
 		eSCENEID = SCENEID_STAGE;
 
 		break;
 	case SCENEID_STAGE:
 		BackGroundRender();
-		printf_s("SCENEID_STAGE\n");
 
-
+		//** Progress
+		PlayerProgress(_pPlayer, _pMonster);
 		MonsterProgress(_pMonster);
-		
+
+		//** Render
+		PlayerRender(_pPlayer);
 		MonsterRender(_pMonster);
-		
+
+
 		if (iGameover)
 			eSCENEID = SCENEID_MENU;
 
@@ -146,10 +162,11 @@ void SetScene(Object* _pPlayer[], Object* _pMonster[])
 		break;
 	case SCENEID_STORE:
 		printf_s("SCENEID_STORE\n");
-
+		system("pause");
 		break;
 	case SCENEID_OPTION:
 		printf_s("SCENEID_OPTION\n");
+		system("pause");
 		break;
 
 	
@@ -170,25 +187,22 @@ Object* CreateObject()
 
 void InitMonster(Object* _pMonster)
 {
-	printf_s("InitMonster");
+	
 
-	_pMonster->pName = (char*)"*";
+	_pMonster->pName = (char*)"★";
+	
 	
 	//초기 위치(0,0)으로 설정
 	_pMonster->TransPos.Position = Vector3(0.f, 0.f);
-
+	
 	//들어온 문자의 크기만큼 크기 초기화
 	_pMonster->TransPos.Scale = Vector3((float)strlen(_pMonster->pName), 0.f);
 
-	//이동 방향 초기화
 	_pMonster->TransPos.eDirection = DIRID_DOWN;
-
 
 }
 void MonsterProgress(Object* _pMonster[])
 {
-	printf_s("MonsterProgress");
-
 	//** 일정 시간 마다..
 	if (dwMonsterTime + 1500 < GetTickCount())
 	{
@@ -196,41 +210,35 @@ void MonsterProgress(Object* _pMonster[])
 
 		//** 몬스터를 생성.
 		CreateMonster(_pMonster);
+
+
 	}
-	
 
 }
 
 void CreateMonster(Object* _pMonster[])
 {
-	printf_s("CreateMonster");
-	//몬스터 리스트를 하나하나 확인해야한다.
+
+	//** 모든 몬스터 리스트를 확인.
 	for (int i = 0; i < MONSTER_MAX; i++)
 	{
-		//printf_s("CreateMonsterd의 if문 위");
-		//몬스터 리스트에 몬스터가 없다면
+		//** 만약에 몬스터가 없다면.....
 		if (!_pMonster[i])
 		{
-			printf_s("CreateMonsterd의 if문 밑");
-			//몬스터를 담을 공간을 생성
+			//** 몬스터를 생성.
 			_pMonster[i] = CreateObject();
 
-			//몬스터 정보,생김새를 초기화
-			printf_s("InitMonster위");
+			//** 생성된 몬스터 초기화.
 			InitMonster(_pMonster[i]);
 
-			//Init에서 (0,0)으로 초기화된 몬스터 위치를 랜덤한 좌표로 변경
-			_pMonster[i]->TransPos.Position = Vector3(
-				float(rand() % (WINSIZEX -5 ) + 2), 
-				float(rand() % (WINSIZEX - 3) + 1));
-		
+			//** 몬스터의 위치를 X좌표가 랜덤하게 변경
+			_pMonster[i]->TransPos.Position = Vector3(float(rand() % (WINSIZEX - 5) + 2), 1.f);
+			
+
+			//** 모든작업 종료된후 구문 탈출.
 			break;
-		
 		}
-
-
 	}
-
 }
 
 void MonsterRender(Object* _pMonster[])
@@ -249,6 +257,91 @@ void MonsterRender(Object* _pMonster[])
 
 	}
 	
+}
+
+
+void InitPlayer(Object* _pPlayer)
+{
+	_pPlayer->pName = (char*)"■";
+	_pPlayer->TransPos.eDirection = DIRID_RIGHT;
+	_pPlayer->TransPos.Position = Vector3(2.f, 1.f);
+	_pPlayer->TransPos.Scale = Vector3((float)strlen(_pPlayer->pName), 1.f);
+}
+
+void PlayerProgress(Object* _pPlayer[], Object* _pMonster[])
+{
+	DWORD dwKey = InputKey();
+
+	if (dwKey & KEYID_UP && _pPlayer[0]->TransPos.eDirection != DIRID_DOWN)
+		_pPlayer[0]->TransPos.eDirection = DIRID_UP;
+
+	if (dwKey & KEYID_DOWN && _pPlayer[0]->TransPos.eDirection != DIRID_UP)
+		_pPlayer[0]->TransPos.eDirection = DIRID_DOWN;
+
+	if (dwKey & KEYID_LEFT && _pPlayer[0]->TransPos.eDirection != DIRID_RIGHT)
+		_pPlayer[0]->TransPos.eDirection = DIRID_LEFT;
+
+	if (dwKey & KEYID_RIGHT && _pPlayer[0]->TransPos.eDirection != DIRID_LEFT)
+		_pPlayer[0]->TransPos.eDirection = DIRID_RIGHT;
+
+
+
+
+	for (int i = iPlayerCount; i > 0; i--)
+	{
+		if (_pPlayer[i])
+		{
+			_pPlayer[i]->TransPos.Position = _pPlayer[i - 1]->TransPos.Position;
+			_pPlayer[i]->TransPos.eDirection = _pPlayer[i - 1]->TransPos.eDirection;
+		}
+	}
+
+
+
+
+	switch (_pPlayer[0]->TransPos.eDirection)
+	{
+	case DIRID_UP:
+		if (_pPlayer[0]->TransPos.Position.y > 1)
+			int(_pPlayer[0]->TransPos.Position.y -= fPlayerSpeed / 2);
+		else
+			iGameover = 1;
+		break;
+	case DIRID_DOWN:
+		if (_pPlayer[0]->TransPos.Position.y < (WINSIZEY - 3))
+			int(_pPlayer[0]->TransPos.Position.y += fPlayerSpeed / 2);
+		else
+			iGameover = 1;
+		break;
+	case DIRID_LEFT:
+		if (_pPlayer[0]->TransPos.Position.x > 2)
+			int(_pPlayer[0]->TransPos.Position.x -= fPlayerSpeed);
+		else
+			iGameover = 1;
+		break;
+	case DIRID_RIGHT:
+		if (_pPlayer[0]->TransPos.Position.x < (WINSIZEX - 4))
+			int(_pPlayer[0]->TransPos.Position.x += fPlayerSpeed);
+		else
+			iGameover = 1;
+		break;
+	}
+
+	
+}
+
+void PlayerRender(Object* _pPlayer[])
+{
+	for (int i = 0; i < iPlayerCount + 1; i++)
+	{
+		if (_pPlayer[i])
+		{
+			SetCursorPosiotion(
+				int(_pPlayer[i]->TransPos.Position.x),
+				int(_pPlayer[i]->TransPos.Position.y),
+				_pPlayer[i]->pName, 13);
+		}
+	}
 }
 
 
