@@ -476,32 +476,59 @@ void BulletProgress(Object* _pBullet[], Object* _pMonster[], Object* _pPlayer[])
 				free(_pBullet[i]);
 				_pBullet[i] = NULL;
 			}
-		}
 
-	}
-
-	//Monster와 충돌시                --충돌을 했는데 둘다 없어지지 않고 잠깐 깜빡였다가 계속 가던 길 간다.
-	for (int i = 0; i < MONSTER_MAX; i++)
-	{
-		if (_pMonster[i]&& _pBullet[i])
-		{
-			if (int(_pBullet[i]->TransPos.Position.x + _pBullet[i]->TransPos.Scale.x) > (int)_pMonster[i]->TransPos.Position.x &&
-				int(_pMonster[i]->TransPos.Position.x + _pMonster[i]->TransPos.Scale.x) < (int)_pBullet[i]->TransPos.Position.x &&
-				int(_pMonster[i]->TransPos.Position.y) == (int)_pBullet[i]->TransPos.Position.y)
+			//Monster와 충돌시                --충돌을 했는데 둘다 없어지지 않고 잠깐 깜빡였다가 계속 가던 길 간다.
+			//점수는 또 자기 혼자 가끔씩 올라감
+			if (_pMonster[i] && _pBullet[i])
 			{
-				free(_pBullet[i]);
-				_pBullet[i] = NULL;
+				if (int(_pBullet[i]->TransPos.Position.x + _pBullet[i]->TransPos.Scale.x) > (int)_pMonster[i]->TransPos.Position.x &&
+					int(_pMonster[i]->TransPos.Position.x + _pMonster[i]->TransPos.Scale.x) > (int)_pBullet[i]->TransPos.Position.x &&
+					int(_pMonster[i]->TransPos.Position.y) == (int)_pBullet[i]->TransPos.Position.y)
+				{
+					free(_pBullet[i]);
+					_pBullet[i] = NULL;
 
-				free(_pMonster[i]);
-				_pMonster[i] = NULL;			
+					free(_pMonster[i]);
+					_pMonster[i] = NULL;
 
-				Collision = 1;
-				iSleep = 50;
-				iScore += 5;
-			}			
-			
+					Collision = 1;
+					iSleep = 50;
+					iScore += 5;
+				}
+
+			}
 		}
+
 	}
+
+	////Monster와 충돌시                --충돌을 했는데 둘다 없어지지 않고 잠깐 깜빡였다가 계속 가던 길 간다.
+	////처음 생성된 한 Bullet만 충돌하면 없어진다. 첫 번째 이후로는 충돌처리가 안됨
+	//for (int i = 0; i < MONSTER_MAX; i++)
+	//{
+	//	if (_pMonster[i]&& _pBullet[i])
+	//	{
+	//		if (int(_pBullet[i]->TransPos.Position.x + _pBullet[i]->TransPos.Scale.x) > (int)_pMonster[i]->TransPos.Position.x &&
+	//			int(_pMonster[i]->TransPos.Position.x + _pMonster[i]->TransPos.Scale.x) < (int)_pBullet[i]->TransPos.Position.x &&
+	//			int(_pMonster[i]->TransPos.Position.y) == (int)_pBullet[i]->TransPos.Position.y)
+	//		{
+	//			free(_pBullet[i]);
+	//			_pBullet[i] = NULL;
+
+	//			free(_pMonster[i]);
+	//			_pMonster[i] = NULL;			
+
+	//			Collision = 1;
+	//			iSleep = 50;
+	//			iScore += 5;
+	//		}			
+	//		
+	//	}
+	//}
+
+
+
+
+
 
 }
 
