@@ -484,6 +484,9 @@ void BulletRender(Object* _pBullet[])
 	}
 }
 
+
+//for이중으로 해서  두번째 for문들어가기 전에 충돌이 일어나면 체크를 하는 변수를 하나 만들어준다.
+//i를 바로 지울 수는 없다 for이 처음 돌고 난 다음 check를 보고 없애준다.
 //총알 이동 & 충돌 처리
 void BulletProgress(Object* _pBullet[], Object* _pMonster[])
 {
