@@ -27,7 +27,7 @@ Object* CreateObject();
 
 
 void InitPlayer(Object* _pPlayer);
-void PlayerProgress(Object* _pPlayer[], Object* _pMonster[], Object* _pBullet[]);
+void PlayerProgress(Object* _pPlayer[],Object* _pBullet[]);
 void PlayerRender(Object* _pPlayer[]);
 
 void InitMonster(Object* _pMonster);
@@ -39,7 +39,7 @@ void CreateMonster(Object* _pMonster[]);
 void InitBullet(Object* _pBullet);
 void CreateBullet(Object* _pBullet[], Object* _pPlayer[]);
 void BulletRender(Object* _pBullet[]);
-void BulletProgress(Object* _pBullet[], Object* _pMonster[], Object* _pPlayer[]);
+void BulletProgress(Object* _pBullet[], Object* _pMonster[]);
 
 
 
@@ -82,13 +82,17 @@ int main(void)
 
 	while (true)
 	{
+
 		if (dwTime + FrameTime + iSleep < GetTickCount64())
 		{
+
 			dwTime = GetTickCount64();
 			system("cls");
 
+			// Collision == 1 이면(충돌했으면)
 			if (Collision)
 			{
+				//0으로 바꿔준다.
 				Collision = 0;
 				iSleep = 0;
 			}
@@ -113,9 +117,6 @@ void SetScene(Object* _pPlayer[], Object* _pMonster[], Object* _pBullet[])
 		
 
 		eSCENEID = SCENEID_MENU;
-
-		
-
 		
 
 		break;
@@ -125,14 +126,15 @@ void SetScene(Object* _pPlayer[], Object* _pMonster[], Object* _pBullet[])
 		
 		if (GetAsyncKeyState(VK_RETURN))
 			eSCENEID = SCENEID_STAGE;
-
+		
+		//플레이어 공간 생성
 		for (int i = 0; i < PLAYER_MAX; i++)
 		{
 			_pPlayer[i] = NULL;
 			_pPlayer[i] = CreateObject();
 			
 		}
-
+		//첫번째 Player 초기화
 		InitPlayer(_pPlayer[0]);
 		_pPlayer[0]->pName = (char*)"♠";
 		
@@ -142,9 +144,11 @@ void SetScene(Object* _pPlayer[], Object* _pMonster[], Object* _pBullet[])
 		FrameTime = 280;
 
 
+		//몬스터 공간 생성
 		for (int i = 0; i < MONSTER_MAX; i++)
 			_pMonster[i] = NULL;
 
+		//총알 공간 생성
 		for (int i = 0; i < BULLET_MAX; i++)
 			_pBullet[i] = NULL;
 
@@ -154,9 +158,10 @@ void SetScene(Object* _pPlayer[], Object* _pMonster[], Object* _pBullet[])
 		BackGroundRender();
 
 		//** Progress
-		PlayerProgress(_pPlayer, _pMonster, _pBullet);
+		BulletProgress(_pBullet, _pMonster);
+		PlayerProgress(_pPlayer,_pBullet);
 		MonsterProgress(_pMonster);
-		BulletProgress(_pBullet,_pMonster, _pPlayer);
+		
 
 		//** Render
 		PlayerRender(_pPlayer);
@@ -186,7 +191,7 @@ void SetScene(Object* _pPlayer[], Object* _pMonster[], Object* _pBullet[])
 }
 
 
-
+//공간 생성
 Object* CreateObject()
 {
 	Object* pObj = (Object*)malloc(sizeof(Object));
@@ -194,6 +199,7 @@ Object* CreateObject()
 	return pObj;
 }
 
+//플레이어 초기화
 void InitPlayer(Object* _pPlayer)
 {
 	_pPlayer->pName = (char*)"■";
@@ -202,36 +208,38 @@ void InitPlayer(Object* _pPlayer)
 	_pPlayer->TransPos.Scale = Vector3((float)strlen(_pPlayer->pName), 1.f);
 }
 
-void PlayerProgress(Object* _pPlayer[], Object* _pMonster[], Object* _pBullet[])
+//플레이어 이동 
+void PlayerProgress(Object* _pPlayer[], Object* _pBullet[])
 {
 	DWORD dwKey = InputKey();
 
 
-
+	//총알 발사
 	if (dwKey & KEYID_SPACE)
 		CreateBullet(_pBullet, _pPlayer);
 	
-	
+	//위
 	if (dwKey & KEYID_UP)
 	{
+		//1보다 클때까지 갈 수 있음
 		if (_pPlayer[0]->TransPos.Position.y > 1)
 			int(_pPlayer[0]->TransPos.Position.y -= fPlayerSpeed / 2);
 	}
 	
-
+	//아래
 	if (dwKey & KEYID_DOWN)
 	{
 		if (_pPlayer[0]->TransPos.Position.y < (WINSIZEY - 3))
 			int(_pPlayer[0]->TransPos.Position.y += fPlayerSpeed / 2);
 	}
 		
-
+	//좌
 	if (dwKey & KEYID_LEFT)
 	{
 		if (_pPlayer[0]->TransPos.Position.x > 2)
 			int(_pPlayer[0]->TransPos.Position.x -= fPlayerSpeed);
 	}
-	
+	//우
 	if (dwKey & KEYID_RIGHT)
 	{
 		if (_pPlayer[0]->TransPos.Position.x < (WINSIZEX - 4))
@@ -243,6 +251,7 @@ void PlayerProgress(Object* _pPlayer[], Object* _pMonster[], Object* _pBullet[])
 	
 }
 
+//플레이어 그려줌
 void PlayerRender(Object* _pPlayer[])
 {
 	for (int i = 0; i < iPlayerCount + 1; i++)
@@ -257,20 +266,21 @@ void PlayerRender(Object* _pPlayer[])
 	}
 }
 
-
+//몬스터 초기화 
 void InitMonster(Object* _pMonster)
 {
 	_pMonster->pName = (char*)"★";
 	_pMonster->TransPos.Position = Vector3(0.f, 0.f);
 	
-	_pMonster->TransPos.Scale = Vector3((float)strlen(_pMonster->pName), 0.f);
+	_pMonster->TransPos.Scale = Vector3((float)strlen(_pMonster->pName), 1.f);
 	_pMonster->TransPos.eDirection = DIRID_DOWN;
 }
 
+//일정 시간마다 몬스터 생성
 void MonsterProgress(Object* _pMonster[])
 {
 	//** 일정 시간 마다..
-	if (dwMonsterTime + 1500 < GetTickCount64())
+	if (dwMonsterTime + 1600 < GetTickCount64())
 	{
 		dwMonsterTime = GetTickCount64();
 
@@ -281,6 +291,7 @@ void MonsterProgress(Object* _pMonster[])
 
 }
 
+//몬스터를 그려줌 + 밑으로 움직임 0.5씩 서로 밑으로 위로 떨어지게 하고 그거를 int형으로 형 변환 햇을 때 같으면 충돌
 void MonsterRender(Object* _pMonster[])
 {
 	//** 모든 몬스터 리스트를 확인.
@@ -295,7 +306,7 @@ void MonsterRender(Object* _pMonster[])
 				_pMonster[i]->pName, 2);
 
 			//몬스터를 계속 밑으로 가게 한다.
-			_pMonster[i]->TransPos.Position.y++;
+			_pMonster[i]->TransPos.Position.y += 0.5;
 
 			//몬스터가 밑으로 다 내려가면 없어짐
 			if (_pMonster[i]->TransPos.Position.y == WINSIZEY-2)
@@ -317,14 +328,16 @@ void CreateMonster(Object* _pMonster[])
 		//** 만약에 몬스터 리스트에 몬스터가 없다면.....
 		if (!_pMonster[i])
 		{
-			//** 몬스터를 생성.
+			//** 몬스터를 생성. (들어갈 공간을 만들어준다.)
 			_pMonster[i] = CreateObject();
 
-			//** 생성된 몬스터를 초기화.
+			//** 생성된 몬스터를 초기화. (만들어진 공간에 초기값을 초기화 해준다.)
 			InitMonster(_pMonster[i]);
 
 			//** 몬스터의 위치를 랜덤한 좌표로 변경.
-			_pMonster[i]->TransPos.Position = Vector3(float(rand() % (WINSIZEX - 5) + 2),30.f);
+			//_pMonster[i]->TransPos.Position = Vector3(float(rand() % (WINSIZEX - 5) + 2),30.f);
+			_pMonster[i]->TransPos.Position = Vector3(15.f, 10.f);
+
 
 			//** 모든 작업이 종료된 후 구문 탈출.
 			break;
@@ -409,6 +422,7 @@ DWORD InputKey()
 	return dwInput;
 }
 
+//커서 표시를 안보이게 해준다.
 void DisableCursor()
 {
 	CONSOLE_CURSOR_INFO Info;
@@ -421,6 +435,7 @@ void DisableCursor()
 	);
 }
 
+//총알 초기화
 void InitBullet(Object* _pBullet)
 {
 	_pBullet->pName = (char*)"Λ";
@@ -430,15 +445,21 @@ void InitBullet(Object* _pBullet)
 
 }
 
+//총알 생성
 void CreateBullet(Object* _pBullet[], Object* _pPlayer[])
 {
 	for (int i = 0; i < BULLET_MAX; i++)
 	{
+		//총알이 없으면
 		if (!_pBullet[i])
 		{
+			//총알이 들어갈 공간을 만들어준다.
 			_pBullet[i] = CreateObject();
+
+			//만들어준 공간의 값을 초기화 해준다.
 			InitBullet(_pBullet[i]);
 
+			//총알이 생성되는 위치를 Player앞으로 한다.
 			_pBullet[i]->TransPos.Position = _pPlayer[0]->TransPos.Position;
 		
 			break;
@@ -447,52 +468,65 @@ void CreateBullet(Object* _pBullet[], Object* _pPlayer[])
 	
 }
 
+//총알 그려줌
 void BulletRender(Object* _pBullet[])
 {
 	for (int i = 0; i < BULLET_MAX; i++)
 	{
+		//총알이 있으면
 		if (_pBullet[i])
 		{
+			//그려준다.
 			SetCursorPosiotion( int(_pBullet[i]->TransPos.Position.x),
-								int(_pBullet[i]->TransPos.Position.y),
+								int(_pBullet[i]->TransPos.Position.y-1),
 							   _pBullet[i]->pName,4);
 		}
 	}
 }
 
-
-void BulletProgress(Object* _pBullet[], Object* _pMonster[], Object* _pPlayer[])
+//총알 이동 & 충돌 처리
+void BulletProgress(Object* _pBullet[], Object* _pMonster[])
 {
-
-	//위로 올라가다가 벽을 만나면 총알 없앤다
 	for (int i = 0; i < BULLET_MAX; i++)
 	{
+		//총알이 있다면
 		if (_pBullet[i])
 		{
-		
-			_pBullet[i]->TransPos.Position.y--;
-			if (_pBullet[i]->TransPos.Position.y == 0)
+			//총알이 위로 쏘아진다.
+			_pBullet[i]->TransPos.Position.y -= 0.5;
+
+			//끝까지 가면 총알을 없애준다.
+			if (_pBullet[i]->TransPos.Position.y == 1)
 			{
 				free(_pBullet[i]);
 				_pBullet[i] = NULL;
 			}
 
-			//Monster와 충돌시                --충돌을 했는데 둘다 없어지지 않고 잠깐 깜빡였다가 계속 가던 길 간다.
-			//점수는 또 자기 혼자 가끔씩 올라감
+			//몬스터와 총알이 리스트에 있다면
 			if (_pMonster[i] && _pBullet[i])
 			{
-				if (int(_pBullet[i]->TransPos.Position.x + _pBullet[i]->TransPos.Scale.x) > (int)_pMonster[i]->TransPos.Position.x &&
-					int(_pMonster[i]->TransPos.Position.x + _pMonster[i]->TransPos.Scale.x) > (int)_pBullet[i]->TransPos.Position.x &&
-					int(_pMonster[i]->TransPos.Position.y) == (int)_pBullet[i]->TransPos.Position.y)
+					// 총알의 오른쪽 부분 > 몬스터의 왼쪽
+				if (_pBullet[i]->TransPos.Position.x  + _pBullet[i]->TransPos.Scale.x  > _pMonster[i]->TransPos.Position.x &&
+					// 총알의 왼쪽 부분 < 몬스터 오른쪽
+					_pMonster[i]->TransPos.Position.x + _pMonster[i]->TransPos.Scale.x > _pBullet[i]->TransPos.Position.x &&
+					_pMonster[i]->TransPos.Position.y + _pMonster[i]->TransPos.Scale.y + 0.5f > _pBullet[i]->TransPos.Position.y &&
+					_pMonster[i]->TransPos.Position.y < _pBullet[i]->TransPos.Position.y + _pBullet[i]->TransPos.Scale.y + 0.5f)
 				{
+					//총알과 몬스터를 없애준다.
+
 					free(_pBullet[i]);
 					_pBullet[i] = NULL;
 
 					free(_pMonster[i]);
 					_pMonster[i] = NULL;
 
+					//충돌햇을 시에 1
 					Collision = 1;
+
+					//맞으면 잠깐 멈추게 한다.
 					iSleep = 50;
+
+					//점수 더하기
 					iScore += 5;
 				}
 
@@ -500,35 +534,5 @@ void BulletProgress(Object* _pBullet[], Object* _pMonster[], Object* _pPlayer[])
 		}
 
 	}
-
-	////Monster와 충돌시                --충돌을 했는데 둘다 없어지지 않고 잠깐 깜빡였다가 계속 가던 길 간다.
-	////처음 생성된 한 Bullet만 충돌하면 없어진다. 첫 번째 이후로는 충돌처리가 안됨
-	//for (int i = 0; i < MONSTER_MAX; i++)
-	//{
-	//	if (_pMonster[i]&& _pBullet[i])
-	//	{
-	//		if (int(_pBullet[i]->TransPos.Position.x + _pBullet[i]->TransPos.Scale.x) > (int)_pMonster[i]->TransPos.Position.x &&
-	//			int(_pMonster[i]->TransPos.Position.x + _pMonster[i]->TransPos.Scale.x) < (int)_pBullet[i]->TransPos.Position.x &&
-	//			int(_pMonster[i]->TransPos.Position.y) == (int)_pBullet[i]->TransPos.Position.y)
-	//		{
-	//			free(_pBullet[i]);
-	//			_pBullet[i] = NULL;
-
-	//			free(_pMonster[i]);
-	//			_pMonster[i] = NULL;			
-
-	//			Collision = 1;
-	//			iSleep = 50;
-	//			iScore += 5;
-	//		}			
-	//		
-	//	}
-	//}
-
-
-
-
-
-
 }
 
